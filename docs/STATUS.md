@@ -9,12 +9,13 @@
 - Тесты транспорта: **24 проверки успешно завершены**: коды и replay/rate limit/expiry, TLS chain, HTTPS, запрет HTTP-приложения, ограничение выдачи файлов, WSS receiver, подтверждение publisher, offer/answer/ICE, bitrate command, heartbeat, отключение. Итог последнего запуска см. `artifacts/transport-tests.log`.
 - Автономный Windows installer собран. Отдельная установка в профиль пользователя и удаление ещё не проверены; проверка встроенного payload не является тестом установки.
 - JS-модули проходят синтаксическую проверку Node.
-- Исходники iOS и unsigned IPA workflow созданы. macOS/Xcode и физического iPhone в этой сессии нет; IPA пока не собран и не установлен.
+- Нативное iOS-приложение **успешно собрано для физического arm64 iPhone** на macOS runner GitHub Actions: [сборка 39769101268](https://github.com/tir0707/CamtranslatorXpraim/actions/runs/39769101268), commit `a50757a`. IPA сформирован и опубликован как artifact. Первичная ошибка типов RTCAudioSession исправлена по реальному журналу Xcode. IPA ещё не установлен на iPhone.
+- [Облачная сборка Windows 39768823426](https://github.com/tir0707/CamtranslatorXpraim/actions/runs/39768823426) также прошла: Release, 24 проверки транспорта и создание installer.
 
 ## Критерии из ТЗ
 
 - [x] Windows-приложение собирается и создаёт окна.
-- [ ] Нативное iOS-приложение успешно собрано Xcode.
+- [x] Нативное iOS-приложение успешно собрано Xcode.
 - [ ] Способ установки этого IPA подтверждён на реальном iPhone без собственного Mac.
 - [ ] Камера iPhone передаёт реальное видео.
 - [ ] Windows показывает видеопоток именно iPhone.
@@ -33,7 +34,7 @@
 
 ## Реализовано исходниками, но требует проверки на устройствах
 
-Native: захват реальных AVFoundation formats, фильтрация пяти профилей, передняя/задняя камера, ручной и автофокус, экспозиция и ISO в пределах activeFormat, WB, torch при поддержке, preview mirror, ориентация через capturer, mute, батарея и thermal throttling, остановка при уходе из foreground. Кодек H.264 через libwebrtc/VideoToolbox. Swift API ещё нужно подтвердить компиляцией Xcode.
+Native: захват реальных AVFoundation formats, фильтрация пяти профилей, передняя/задняя камера, ручной и автофокус, экспозиция и ISO в пределах activeFormat, WB, torch при поддержке, preview mirror, ориентация через capturer, mute, батарея и thermal throttling, остановка при уходе из foreground. Кодек H.264 через libwebrtc/VideoToolbox. Swift API подтверждены компиляцией Xcode; фактическое поведение требует iPhone.
 
 Windows: WPF и отдельное окно видео, signaling, mDNS advertisement компьютера, ручные IP, USB candidate detection, WebRTC receive, локальные настройки, трей, добровольный автозапуск, снимок PNG, ограниченная запись WebM, папка сохранения, OBS WebSocket integration. OBS не установлен в обнаруженном стандартном расположении; тест в OBS не проводился.
 
@@ -52,4 +53,4 @@ Windows: WPF и отдельное окно видео, signaling, mDNS advertis
 
 ## Следующий проверяемый рубеж
 
-Сначала запустить iOS workflow в репозитории пользователя и исправить обнаруженные ошибки компиляции. Затем установить IPA через AltStore или открыть Safari с доверенным CA, проверить реальное видео 720p/30 на iPhone XR и OBS Virtual Camera → Discord. Без этих результатов нельзя объявлять продукт готовым для ежедневной работы.
+Установить собранный IPA через AltStore или открыть Safari с доверенным CA, проверить реальное видео 720p/30 на iPhone XR и OBS Virtual Camera → Discord. Без этих результатов нельзя объявлять продукт готовым для ежедневной работы.

@@ -5,7 +5,7 @@
 | Направление | Вывод и выбранное решение | Степень подтверждения |
 |---|---|---|
 | iPhone XR | Apple указывает 1080p 30/60. Реальные режимы каждой камеры запрашиваются через AVFoundation, не выводятся из модели телефона | Документация; устройство не подключено |
-| Бесплатная iOS-сборка | Xcode запускается на macOS runner GitHub Actions. С Windows можно редактировать исходники, запускать workflow и получать unsigned IPA | Workflow подготовлен, облачный запуск не выполнен |
+| Бесплатная iOS-сборка | Xcode запускается на macOS runner GitHub Actions. С Windows можно редактировать исходники, запускать workflow и получать unsigned IPA | [Успешная arm64-сборка и IPA artifact](https://github.com/tir0707/CamtranslatorXpraim/actions/runs/39769101268); установка ещё не проверена |
 | GitHub Actions | Стандартные hosted runners бесплатны для публичных репозиториев. Private GitHub Free: 2000 минут/месяц и 500 МБ artifacts; macOS учитывается дороже. Larger runners платные | Проверено по GitHub Docs; не включать платные runners и бюджет перерасхода |
 | Установка iOS | AltStore Classic + AltServer Windows; бесплатный Apple ID. Подпись истекает через 7 дней, активных sideload-приложений до трёх, включая AltStore | Официальная инструкция; установка здесь не проверена |
 | Видеотранспорт | libwebrtc для iOS, WebRTC браузера в Windows; аппаратный H.264 VideoToolbox через стандартный encoder libwebrtc. Собственный RTP/UDP не нужен | Наличие API и бинарной зависимости проверено; аппаратный путь требует устройства |

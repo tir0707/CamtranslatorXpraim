@@ -30,7 +30,7 @@ dotnet build tests/integration/WebRtcSmoke.csproj -c Release -m:1
 
 ## iOS
 
-Workflow `.github/workflows/build-ios.yml` генерирует проект Xcode и собирает arm64 IPA без подписи на macOS runner. WebRTC закреплён на 154.0.0. IPA нужно переподписать AltStore Classic; он не устанавливается просто копированием файла. В этой Windows-среде сборка Xcode не выполнялась.
+Workflow `.github/workflows/build-ios.yml` генерирует проект Xcode и собирает arm64 IPA без подписи на macOS runner. WebRTC закреплён на 154.0.0. [Облачная сборка IPA успешно выполнена 22 октября 2026](https://github.com/tir0707/CamtranslatorXpraim/actions/runs/39769101268). IPA нужно переподписать AltStore Classic; он не устанавливается просто копированием файла. Установка и камера реального iPhone пока не проверены.
 
 ## Границы версии
 

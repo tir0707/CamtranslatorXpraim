@@ -2,6 +2,8 @@
 
 ## Получение IPA
 
+Готовая проверенная сборка: [GitHub Actions 39769101268](https://github.com/tir0707/CamtranslatorXpraim/actions/runs/39769101268). Скачайте artifact **CamtranslatorXpraim-unsigned-IPA**, извлеките IPA. Artifact хранится три дня (до 25 октября 2026); для повторного получения можно заново запустить workflow. Локальная копия после загрузки находится в `dist/ios/CamtranslatorXpraim-unsigned.ipa`.
+
 1. Поместите репозиторий в свой GitHub (публикация из этой сессии не выполнялась).
 2. Для бесплатной облачной сборки используйте **публичный репозиторий и стандартный macOS runner**. В private проверяйте бесплатную квоту и запрет перерасхода. Не включайте larger runners.
 3. Actions → Build unsigned iPhone IPA → Run workflow. Дождитесь фактического успеха.
