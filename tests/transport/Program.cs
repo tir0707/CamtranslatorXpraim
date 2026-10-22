@@ -1,0 +1,63 @@
+using System.Net;
+using System.Net.WebSockets;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.Json;
+using CamtranslatorXpraim.Core;
+using CamtranslatorXpraim.Transport;
+
+var checks = 0;
+void Check(bool result, string name) { if (!result) throw new Exception("FAIL: " + name); Console.WriteLine("PASS: " + name);checks++; }
+var gate = new PairingGate();var code = gate.Rotate();
+Check(code.Length == 6 && code.All(char.IsDigit), "six digit cryptographic pairing code");
+Check(!gate.TryConsume("wrong!", "a"), "reject wrong code");
+Check(gate.TryConsume(code, "a"), "accept correct code");
+Check(!gate.TryConsume(code, "a"), "reject replay");
+for (var i = 0; i < 5; i++) gate.TryConsume("------", "attacker");
+Check(!gate.TryConsume(gate.Code, "attacker"), "limit guessing");
+var clock = new TestClock();var timed = new PairingGate(clock);var expired = timed.Rotate();clock.Now = clock.Now.AddMinutes(6);
+Check(!timed.TryConsume(expired, "a"), "expire code after 5 minutes");
+Check(!SignalServer.SecureEquals("a", "b") && SignalServer.SecureEquals("abc", "abc"), "constant time token comparison");
+var packet = MdnsAdvertiser.BuildPacket("test.local", IPAddress.Parse("192.168.1.2"), 47990);
+Check(packet[7] == 4 && Encoding.ASCII.GetString(packet).Contains("_camxp"), "DNS-SD packet records");
+var root = Path.GetFullPath(Path.Combine("artifacts", "transport-test-" + Guid.NewGuid().ToString("N")));Directory.CreateDirectory(root);
+using var cert = new LocalCertificate(root);
+Check(cert.Server.HasPrivateKey && cert.Authority.HasPrivateKey, "local CA and TLS leaf generated");
+using var chain = new X509Chain();chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;chain.ChainPolicy.CustomTrustStore.Add(cert.Authority);chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+Check(chain.Build(cert.Server), "server certificate validates against local CA");
+await using var server = new SignalServer();var approvals = 0;
+server.Approve = _ => { approvals++;return Task.FromResult(true); };
+var webRoot = Path.GetFullPath("apps/web-fallback");
+await server.StartAsync(cert, webRoot, 48990);
+using var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, c, _, _) => c?.Thumbprint == cert.Server.Thumbprint };
+using var http = new HttpClient(handler);
+Check((await http.GetStringAsync("https://127.0.0.1:48990/health")).Contains("CamtranslatorXpraim"), "real HTTPS health");
+Check((await http.GetAsync("http://127.0.0.1:48991/")).StatusCode == HttpStatusCode.NotFound, "HTTP never serves camera application");
+Check((await http.GetByteArrayAsync("http://127.0.0.1:48991/ca.cer")).SequenceEqual(cert.Authority.RawData), "public CA bootstrap only");
+Check((await http.GetAsync("https://127.0.0.1:48990/authority.pfx")).StatusCode == HttpStatusCode.NotFound, "private files cannot be served");
+ClientWebSocket Socket() { var s = new ClientWebSocket();s.Options.RemoteCertificateValidationCallback = (_, c, _, _) => c?.GetCertHashString() == cert.Server.Thumbprint;return s; }
+async Task Send(ClientWebSocket s, object data) => await s.SendAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(data)), WebSocketMessageType.Text, true, CancellationToken.None);
+async Task<JsonElement> Read(ClientWebSocket s) { using var ct = new CancellationTokenSource(5000);using var d = await SignalServer.ReadAsync(s, ct.Token);return d.RootElement.Clone(); }
+using var receiver = Socket();await receiver.ConnectAsync(new Uri("wss://127.0.0.1:48990/signal"), CancellationToken.None);
+await Send(receiver, new { type = "hello", role = "receiver", token = server.ReceiverToken });
+Check((await Read(receiver)).GetProperty("type").GetString() == "ready", "authenticated receiver");
+using var bad = Socket();await bad.ConnectAsync(new Uri("wss://127.0.0.1:48990/signal"), CancellationToken.None);
+await Send(bad, new { type = "hello", role = "publisher", code = "------" });
+Check((await Read(bad)).GetProperty("type").GetString() == "error" && approvals == 0, "bad code never prompts for approval");
+using var publisher = Socket();await publisher.ConnectAsync(new Uri("wss://127.0.0.1:48990/signal"), CancellationToken.None);
+await Send(publisher, new { type = "hello", role = "publisher", code = server.Pairing.Code });
+Check((await Read(publisher)).GetProperty("type").GetString() == "paired" && approvals == 1, "publisher requires code and explicit approval callback");
+Check((await Read(publisher)).GetProperty("type").GetString() == "peer-ready", "publisher waits for receiver readiness");
+await Send(publisher, new { type = "offer", sdp = "test-signaling-payload-not-real-media" });
+Check((await Read(receiver)).GetProperty("sdp").GetString() == "test-signaling-payload-not-real-media", "relay offer over TLS");
+await Send(receiver, new { type = "answer", sdp = "answer-test" });
+Check((await Read(publisher)).GetProperty("sdp").GetString() == "answer-test", "relay answer");
+await Send(publisher, new { type = "ice", candidate = new { candidate = "candidate-test", sdpMLineIndex = 0, sdpMid = "0" } });
+Check((await Read(receiver)).GetProperty("type").GetString() == "ice", "relay ICE");
+await Send(receiver, new { type = "command", action = "bitrate", value = 900000 });
+Check((await Read(publisher)).GetProperty("value").GetInt32() == 900000, "relay bitrate control");
+await Send(publisher, new { type = "ping" });Check((await Read(publisher)).GetProperty("type").GetString() == "pong", "heartbeat");
+await server.DisconnectAsync();Check((await Read(publisher)).GetProperty("type").GetString() == "disconnect", "explicit desktop disconnect");
+receiver.Abort();publisher.Abort();bad.Abort();
+Console.WriteLine($"{checks} checks passed. No iPhone or real video was used in these transport tests.");
+sealed class TestClock : TimeProvider { public DateTimeOffset Now = DateTimeOffset.UtcNow;public override DateTimeOffset GetUtcNow() => Now; }

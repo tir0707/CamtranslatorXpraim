@@ -1,0 +1,25 @@
+name: Windows build and transport tests
+on:
+  workflow_dispatch:
+  push:
+    paths: ['apps/windows/**', 'apps/web-fallback/**', 'tests/**', 'scripts/**', 'Directory.Build.props', '.github/workflows/build-windows.yml']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build apps/windows/PhoneCam.Desktop/PhoneCam.Desktop.csproj -c Release -m:1
+      - run: dotnet build tests/transport/TransportTests.csproj -c Release -m:1
+      - run: dotnet tests/transport/bin/Release/net10.0/TransportTests.dll
+      - run: ./scripts/build-windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CamtranslatorXpraim-Windows-x64
+          path: dist/CamtranslatorXpraim-Setup.exe
+          retention-days: 3

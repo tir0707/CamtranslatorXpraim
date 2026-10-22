@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>CamtranslatorXpraim</AssemblyName>
+    <Version>0.1.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3650.58" />
+    <ProjectReference Include="../PhoneCam.Core/PhoneCam.Core.csproj" />
+    <ProjectReference Include="../PhoneCam.Transport/PhoneCam.Transport.csproj" />
+    <ProjectReference Include="../PhoneCam.Video/PhoneCam.Video.csproj" />
+    <ProjectReference Include="../PhoneCam.VirtualCamera/PhoneCam.VirtualCamera.csproj" />
+    <Content Include="../../web-fallback/*" Link="web/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

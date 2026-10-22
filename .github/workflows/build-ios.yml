@@ -1,0 +1,55 @@
+name: Build unsigned iPhone IPA
+on:
+  workflow_dispatch:
+  push:
+    paths: ['apps/ios/**', '.github/workflows/build-ios.yml']
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show available Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          selected=$(find /Applications -maxdepth 1 -name 'Xcode_*.app' | sort -V | tail -1)
+          if [ -n "$selected" ]; then sudo xcode-select -s "$selected/Contents/Developer"; fi
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+      - name: Install project generator
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: apps/ios
+        run: xcodegen generate
+      - name: Resolve pinned WebRTC
+        working-directory: apps/ios
+        run: xcodebuild -resolvePackageDependencies -project CamtranslatorXpraim.xcodeproj -scheme CamtranslatorXpraim -clonedSourcePackagesDirPath ../../artifacts/packages
+      - name: Build for physical arm64 iPhone (unsigned)
+        working-directory: apps/ios
+        run: |
+          set -o pipefail
+          xcodebuild -project CamtranslatorXpraim.xcodeproj -scheme CamtranslatorXpraim -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath ../../artifacts/DerivedData -clonedSourcePackagesDirPath ../../artifacts/packages CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' ARCHS=arm64 build 2>&1 | tee ../../artifacts/ios-build.log
+      - name: Package unsigned IPA for AltStore re-signing
+        run: |
+          mkdir -p artifacts/ipa/Payload
+          cp -R artifacts/DerivedData/Build/Products/Release-iphoneos/CamtranslatorXpraim.app artifacts/ipa/Payload/
+          cd artifacts/ipa
+          ditto -c -k --keepParent Payload CamtranslatorXpraim-unsigned.ipa
+          echo 'IPA is unsigned. Install only after re-signing with AltStore Classic. A successful build does not verify installation or streaming on iPhone.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CamtranslatorXpraim-unsigned-IPA
+          path: artifacts/ipa/CamtranslatorXpraim-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ios-build-log
+          path: artifacts/ios-build.log
+          retention-days: 3

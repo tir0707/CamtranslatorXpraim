@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.build/
+**/DerivedData/
+**/.swiftpm/
+**/node_modules/
+dist/
+artifacts/
+*.pfx
+*.key
+*.user
+.DS_Store
+restore.log
