@@ -6,8 +6,8 @@ enum PhoneAudio {
         let audio = RTCAudioSession.sharedInstance()
         audio.lockForConfiguration()
         defer { audio.unlockForConfiguration() }
-        try audio.setCategory(AVAudioSession.Category.playAndRecord.rawValue, with: [.defaultToSpeaker, .allowBluetooth])
-        try audio.setMode(AVAudioSession.Mode.videoChat.rawValue)
+        try audio.setCategory(.playAndRecord, with: [.defaultToSpeaker, .allowBluetooth])
+        try audio.setMode(.videoChat)
     }
     static func authorize(_ completion: @escaping (Bool) -> Void) { AVCaptureDevice.requestAccess(for: .audio, completionHandler: completion) }
 }
